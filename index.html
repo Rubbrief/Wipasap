@@ -4,1436 +4,364 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>วิภาทรัพย์ — งบการเงิน</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #fdf6ec;
-    --surface: #fff8f0;
-    --surface2: #faecd8;
-    --border: #e8d5b7;
-    --accent: #d4622a;
-    --accent2: #e8a020;
-    --accent3: #c0392b;
-    --text: #2c1a0e;
-    --text-dim: #7a5c3e;
-    --text-muted: #b89a7a;
-    --profit: #2e7d32;
-    --loss: #c0392b;
-    --gas: #e8a020;
-    --transfer: #6a4fc1;
-    --longan: #c0622a;
-    --font: 'Noto Sans Thai', sans-serif;
-    --mono: 'IBM Plex Mono', monospace;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Subtle dot background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: radial-gradient(circle, rgba(212,98,42,0.08) 1px, transparent 1px);
-    background-size: 28px 28px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
-
-  /* ─── HEADER ─── */
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 0;
-    position: sticky;
-    top: 0;
-    background: rgba(253,246,236,0.95);
-    backdrop-filter: blur(12px);
-    z-index: 100;
-  }
-  .header-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  .brand-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--accent);
-  }
-  .brand-sub {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    font-family: var(--mono);
-    letter-spacing: 0.05em;
-  }
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 10px rgba(212,98,42,0.5);
-    animation: pulse 2s ease-in-out infinite;
-    display: inline-block;
-    margin-right: 6px;
-  }
-  @keyframes pulse {
-    0%,100% { opacity:1; transform:scale(1); }
-    50% { opacity:0.5; transform:scale(0.85); }
-  }
-
-  /* ─── DATE SELECTOR ─── */
-  .selector-bar {
-    padding: 24px 0 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .selector-label {
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-  .year-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .year-btn {
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    font-weight: 500;
-    padding: 6px 18px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.18s;
-  }
-  .year-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .year-btn.active {
-    background: var(--accent);
-    color: var(--bg);
-    border-color: var(--accent);
-    font-weight: 700;
-    box-shadow: 0 0 16px rgba(212,98,42,0.25);
-  }
-  .month-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .month-btn {
-    font-family: var(--font);
-    font-size: 0.82rem;
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.18s;
-    position: relative;
-  }
-  .month-btn:hover { border-color: var(--accent); color: var(--text); }
-  .month-btn.active {
-    background: rgba(212,98,42,0.12);
-    border-color: var(--accent);
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .month-btn.has-data::after {
-    content: '';
-    position: absolute;
-    top: 4px; right: 4px;
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--profit);
-  }
-  .month-btn.no-data { opacity: 0.4; cursor: default; }
-  .month-btn.no-data:hover { border-color: var(--border); color: var(--text-dim); }
-
-  /* ─── CURRENT PERIOD LABEL ─── */
-  .period-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, rgba(212,98,42,0.08), rgba(212,98,42,0.02));
-    border: 1px solid rgba(212,98,42,0.25);
-    border-radius: 8px;
-    margin-bottom: 24px;
-  }
-  .period-label .period-text {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .period-label .period-sub {
-    font-size: 0.75rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    margin-left: auto;
-  }
-
-  /* ─── KPI CARDS ─── */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
-  }
-  .kpi-card:hover { border-color: var(--border); transform: translateY(-2px); }
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .kpi-card.revenue::before { background: var(--accent); }
-  .kpi-card.expense::before { background: var(--accent3); }
-  .kpi-card.profit::before { background: var(--profit); }
-  .kpi-card.margin::before { background: var(--accent2); }
-  .kpi-card.gas::before { background: var(--gas); }
-  .kpi-card.transfer::before { background: var(--transfer); }
-  .kpi-card.longan::before { background: var(--longan); }
-  .kpi-label {
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-  .kpi-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    font-family: var(--mono);
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-  .kpi-card.revenue .kpi-value { color: var(--accent); }
-  .kpi-card.expense .kpi-value { color: var(--accent3); }
-  .kpi-card.profit .kpi-value { color: var(--profit); }
-  .kpi-card.margin .kpi-value { color: var(--gas); }
-  .kpi-card.gas .kpi-value { color: #b56a00; }
-  .kpi-card.transfer .kpi-value { color: var(--transfer); }
-  .kpi-card.longan .kpi-value { color: var(--longan); }
-  .kpi-sub {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-  }
-  .kpi-change {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 0.72rem;
-    font-family: var(--mono);
-    margin-top: 6px;
-    padding: 2px 6px;
-    border-radius: 3px;
-  }
-  .kpi-change.up { color: var(--profit); background: rgba(46,125,50,0.1); }
-  .kpi-change.down { color: var(--loss); background: rgba(192,57,43,0.1); }
-  .kpi-change.flat { color: var(--text-dim); background: rgba(122,92,62,0.1); }
-
-  /* ─── INCOME STATEMENT TABLE ─── */
-  .section-title {
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  @media(max-width:900px) { .main-grid { grid-template-columns:1fr; } }
-
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-  }
-
-  .stmt-table { width: 100%; border-collapse: collapse; }
-  .stmt-table tr { border-bottom: 1px solid rgba(30,45,66,0.6); }
-  .stmt-table tr:last-child { border-bottom: none; }
-  .stmt-table td {
-    padding: 9px 4px;
-    font-size: 0.87rem;
-  }
-  .stmt-table td:last-child {
-    text-align: right;
-    font-family: var(--mono);
-    font-size: 0.85rem;
-  }
-  .stmt-table .row-section {
-    font-size: 0.68rem;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding-top: 16px;
-  }
-  .stmt-table .row-indent { padding-left: 14px; color: var(--text-dim); }
-  .stmt-table .row-total td { 
-    border-top: 1px solid var(--border);
-    font-weight: 600;
-    color: var(--text);
-    padding-top: 10px;
-  }
-  .stmt-table .row-net td {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--profit);
-    padding: 12px 4px 4px;
-    border-top: 2px solid var(--profit);
-  }
-  .txt-revenue { color: var(--accent); }
-  .txt-expense { color: var(--accent3); }
-  .txt-profit { color: var(--profit); }
-
-  /* ─── BAR CHART ─── */
-  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
-  .bar-row { display: flex; align-items: center; gap: 10px; }
-  .bar-row-label { font-size: 0.78rem; color: var(--text-dim); width: 100px; flex-shrink: 0; font-family: var(--font); }
-  .bar-track {
-    flex: 1;
-    height: 22px;
-    background: var(--surface2);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    position: absolute;
-    left: 0; top: 0;
-    transition: width 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 6px;
-  }
-  .bar-fill-label {
-    font-size: 0.68rem;
-    font-family: var(--mono);
-    font-weight: 600;
-    color: rgba(255,255,255,0.85);
-    white-space: nowrap;
-  }
-
-  /* ─── SPENDING BREAKDOWN ─── */
-  .spend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  @media(max-width:500px) { .spend-grid { grid-template-columns:1fr; } }
-  .spend-item {
-    background: var(--surface2);
-    border-radius: 8px;
-    padding: 14px;
-    border: 1px solid var(--border);
-  }
-  .spend-item-label { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px; }
-  .spend-item-val { font-size: 1.05rem; font-family: var(--mono); font-weight: 600; }
-  .spend-item-pct { font-size: 0.68rem; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
-
-  /* ─── SAVINGS CARD ─── */
-  .savings-section { margin-bottom: 24px; }
-  .savings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-  .savings-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .savings-icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-  }
-  .savings-icon.green { background: rgba(46,125,50,0.12); }
-  .savings-icon.amber { background: rgba(232,160,32,0.15); }
-  .savings-icon.blue { background: rgba(106,79,193,0.12); }
-  .savings-icon.orange { background: rgba(192,98,42,0.12); }
-  .savings-meta {}
-  .savings-meta .s-label { font-size: 0.7rem; color: var(--text-dim); }
-  .savings-meta .s-val { font-size: 1rem; font-family: var(--mono); font-weight: 600; color: var(--text); }
-
-  /* ─── EMPTY STATE ─── */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 20px;
-    text-align: center;
-  }
-  .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
-  .empty-title { font-size: 1rem; color: var(--text-dim); margin-bottom: 6px; }
-  .empty-sub { font-size: 0.8rem; color: var(--text-muted); font-family: var(--mono); }
-
-  /* INPUT AREA */
-  .input-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-  .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .input-group label {
-    display: block;
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    letter-spacing: 0.08em;
-    margin-bottom: 6px;
-  }
-  .input-group input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.9rem;
-    transition: border-color 0.18s;
-    outline: none;
-  }
-  .input-group input:focus { border-color: var(--accent); }
-  .input-group input::placeholder { color: var(--text-muted); }
-  .save-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 20px;
-    background: var(--accent);
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    font-family: var(--font);
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.18s, transform 0.18s;
-    margin-top: 14px;
-  }
-  .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-  .save-btn:active { transform: translateY(0); }
-
-  /* TOAST */
-  .toast {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    background: var(--accent);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    z-index: 999;
-    opacity: 0;
-    transform: translateY(12px);
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateY(0); }
-
-  /* COMPARE TABLE */
-  .compare-section { margin-bottom: 24px; }
-  .compare-table { width: 100%; border-collapse: collapse; }
-  .compare-table th {
-    text-align: right;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    padding: 8px 8px;
-    border-bottom: 1px solid var(--border);
-    letter-spacing: 0.06em;
-  }
-  .compare-table th:first-child { text-align: left; }
-  .compare-table td {
-    padding: 8px 8px;
-    font-size: 0.82rem;
-    border-bottom: 1px solid rgba(30,45,66,0.4);
-    text-align: right;
-    font-family: var(--mono);
-  }
-  .compare-table td:first-child { text-align: left; font-family: var(--font); font-size: 0.85rem; }
-  .compare-table .best-val { color: var(--profit); font-weight: 700; }
-  .compare-table .worst-val { color: var(--loss); }
-
-  /* ─── CHARTS ─── */
-  .charts-section { margin-bottom: 24px; }
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .chart-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px 20px 14px;
-    position: relative;
-  }
-  .chart-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .chart-title {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .chart-legend {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.7rem;
-    font-family: var(--mono);
-    color: var(--text-dim);
-  }
-  .legend-dot {
-    width: 10px; height: 10px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-  .chart-wrap {
-    position: relative;
-    width: 100%;
-  }
-  .chart-wrap canvas {
-    width: 100% !important;
-    display: block;
-    border-radius: 6px;
-  }
-  .chart-tooltip {
-    position: absolute;
-    background: var(--text);
-    color: var(--surface);
-    padding: 7px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-family: var(--mono);
-    pointer-events: none;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-  .chart-no-data {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 80px;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-family: var(--mono);
-  }
-
-  footer {
-    text-align: center;
-    padding: 30px 0 40px;
-    font-size: 0.72rem;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    border-top: 1px solid var(--border);
-    margin-top: 24px;
-  }
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#e8f0e8; --white:#ffffff; --surface:#f7f9f7; --border:#e4eae4;
+  --text:#1a1f1a; --text-2:#6b7c6b; --text-3:#a0b0a0;
+  --blue:#2563eb; --blue-lt:#eff6ff; --green:#16a34a; --green-lt:#f0fdf4;
+  --red:#dc2626; --red-lt:#fef2f2; --amber:#d97706; --amber-lt:#fffbeb;
+  --purple:#7c3aed; --purple-lt:#f5f3ff;
+  --shadow:0 2px 12px rgba(0,0,0,0.06); --shadow-md:0 4px 24px rgba(0,0,0,0.09);
+  --r:16px; --r-sm:10px; --font:'Noto Sans Thai','Manrope',sans-serif; --mono:'JetBrains Mono',monospace; --sidebar:240px;
+}
+body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+.sidebar { width:var(--sidebar); min-height:100vh; background:var(--white); display:flex; flex-direction:column; padding:24px 16px; position:fixed; top:0; left:0; bottom:0; z-index:100; box-shadow:2px 0 12px rgba(0,0,0,0.04); }
+.logo { display:flex; align-items:center; gap:10px; padding:4px 8px 20px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo-icon { width:36px; height:36px; background:var(--text); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.82rem; color:white; font-weight:800; flex-shrink:0; }
+.logo-name { font-size:0.95rem; font-weight:800; letter-spacing:-0.03em; color:var(--text); }
+.logo-name span { font-size:0.65rem; font-weight:500; color:var(--text-2); display:block; letter-spacing:0; }
+.nav-label { font-size:0.65rem; font-weight:600; color:var(--text-3); letter-spacing:0.1em; text-transform:uppercase; padding:0 8px; margin-bottom:6px; margin-top:10px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-sm); font-size:0.85rem; font-weight:500; color:var(--text-2); cursor:pointer; transition:all 0.16s; margin-bottom:2px; border:none; background:none; width:100%; text-align:left; font-family:var(--font); }
+.nav-item:hover { background:var(--surface); color:var(--text); }
+.nav-item.active { background:var(--blue); color:white; font-weight:600; box-shadow:0 4px 12px rgba(37,99,235,0.28); }
+.nav-icon { font-size:0.9rem; width:18px; text-align:center; flex-shrink:0; }
+.nav-badge { margin-left:auto; background:var(--blue-lt); color:var(--blue); font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:20px; font-family:var(--mono); }
+.nav-item.active .nav-badge { background:rgba(255,255,255,0.22); color:white; }
+.sidebar-divider { height:1px; background:var(--border); margin:12px 8px; }
+.sidebar-footer { margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
+.company-tag { display:flex; align-items:center; gap:10px; padding:10px 8px; }
+.company-avatar { width:34px; height:34px; background:linear-gradient(135deg,#d4622a,#e8a020); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:800; color:white; flex-shrink:0; }
+.c-name { font-size:0.78rem; font-weight:700; color:var(--text); }
+.c-sub { font-size:0.67rem; color:var(--text-3); }
+.main { margin-left:var(--sidebar); flex:1; min-height:100vh; display:flex; flex-direction:column; }
+.topbar { display:flex; align-items:center; justify-content:space-between; padding:22px 28px 0; flex-wrap:wrap; gap:14px; }
+.big-num { font-size:2.2rem; font-weight:800; letter-spacing:-0.04em; color:var(--text); font-family:'Manrope',var(--font); line-height:1; }
+.big-sub { font-size:0.7rem; color:var(--text-3); display:block; margin-top:2px; }
+.tab-group { display:flex; background:var(--white); border-radius:50px; padding:4px; gap:2px; box-shadow:var(--shadow); }
+.tab-btn { padding:7px 18px; border-radius:50px; font-size:0.8rem; font-weight:600; color:var(--text-2); cursor:pointer; transition:all 0.18s; border:none; background:none; font-family:var(--font); }
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { background:var(--text); color:white; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+.period-chip { display:flex; align-items:center; gap:6px; background:var(--white); border:1px solid var(--border); border-radius:50px; padding:6px 14px; font-size:0.78rem; font-weight:600; color:var(--text); box-shadow:var(--shadow); }
+.period-chip .dot { width:7px; height:7px; border-radius:50%; background:var(--green); }
+.selector-row { display:flex; align-items:center; gap:8px; padding:16px 28px 8px; flex-wrap:wrap; }
+.sel-label { font-size:0.72rem; color:var(--text-3); font-weight:600; }
+.month-chips { display:flex; gap:5px; flex-wrap:wrap; }
+.month-chip { padding:5px 13px; border-radius:50px; border:1.5px solid var(--border); background:var(--white); font-size:0.78rem; font-weight:500; color:var(--text-2); cursor:pointer; transition:all 0.15s; position:relative; font-family:var(--font); }
+.month-chip:hover { border-color:var(--text); color:var(--text); }
+.month-chip.active { background:var(--text); border-color:var(--text); color:white; }
+.month-chip.has-data::after { content:''; position:absolute; top:3px; right:3px; width:5px; height:5px; border-radius:50%; background:var(--green); border:1.5px solid white; }
+.month-chip.active.has-data::after { border-color:var(--text); }
+.month-chip.no-data { opacity:0.35; pointer-events:none; }
+.content { padding:16px 28px 40px; flex:1; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.kpi-card { background:var(--white); border-radius:var(--r); padding:20px; box-shadow:var(--shadow); transition:box-shadow 0.18s,transform 0.18s; }
+.kpi-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.kpi-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.kpi-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; }
+.kpi-badge { font-size:0.7rem; font-weight:700; font-family:var(--mono); padding:3px 8px; border-radius:50px; }
+.badge-up { background:var(--green-lt); color:var(--green); }
+.badge-down { background:var(--red-lt); color:var(--red); }
+.kpi-val { font-size:1.55rem; font-weight:800; font-family:var(--mono); letter-spacing:-0.03em; line-height:1; margin-bottom:4px; }
+.kpi-lbl { font-size:0.72rem; color:var(--text-2); font-weight:500; }
+.board { display:grid; grid-template-columns:1.15fr 1fr; gap:14px; margin-bottom:16px; }
+.card { background:var(--white); border-radius:var(--r); padding:22px; box-shadow:var(--shadow); }
+.card-title { font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.ct-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.85rem; }
+.stmt { width:100%; border-collapse:collapse; }
+.stmt tr { border-bottom:1px solid var(--border); }
+.stmt tr:last-child { border-bottom:none; }
+.stmt td { padding:9px 4px; font-size:0.83rem; }
+.stmt td:last-child { text-align:right; font-family:var(--mono); font-size:0.82rem; font-weight:600; }
+.stmt .sec-row td { font-size:0.62rem; color:var(--text-3); letter-spacing:0.1em; text-transform:uppercase; padding-top:14px; font-weight:700; }
+.stmt .indent { padding-left:12px; color:var(--text-2); }
+.stmt .total-row td { font-weight:700; padding-top:10px; border-top:2px solid var(--border); }
+.stmt .net-row td { font-size:0.98rem; font-weight:800; color:var(--green); padding:12px 4px 4px; border-top:2px solid var(--green); }
+.txt-rev { color:var(--blue) !important; } .txt-exp { color:var(--red) !important; } .txt-prf { color:var(--green) !important; }
+.bbar-list { display:flex; flex-direction:column; gap:10px; }
+.bbar-row { display:flex; align-items:center; gap:10px; }
+.bbar-label { font-size:0.76rem; color:var(--text-2); width:90px; flex-shrink:0; }
+.bbar-track { flex:1; height:20px; background:var(--surface); border-radius:6px; overflow:hidden; position:relative; }
+.bbar-fill { height:100%; border-radius:6px; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; transition:width 0.7s cubic-bezier(.25,.46,.45,.94); }
+.bbar-fill-lbl { font-size:0.65rem; font-family:var(--mono); font-weight:600; color:rgba(255,255,255,0.9); white-space:nowrap; }
+.chart-wrap { position:relative; width:100%; }
+.chart-wrap canvas { width:100% !important; display:block; }
+.chart-tt { position:absolute; background:var(--text); color:white; padding:10px 14px; border-radius:10px; font-size:0.75rem; font-family:var(--mono); pointer-events:none; opacity:0; transition:opacity 0.15s; z-index:10; box-shadow:var(--shadow-md); min-width:170px; line-height:1.7; }
+.chart-legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+.cl-item { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--text-2); font-weight:500; }
+.cl-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.sav-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sav-item { background:var(--surface); border-radius:var(--r-sm); padding:14px; display:flex; align-items:center; gap:10px; }
+.sav-ic { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.sav-lbl { font-size:0.68rem; color:var(--text-2); } .sav-val { font-size:0.92rem; font-weight:700; font-family:var(--mono); color:var(--text); }
+.compare-wrap { overflow-x:auto; }
+.compare-tbl { width:100%; border-collapse:collapse; }
+.compare-tbl th { text-align:right; font-size:0.68rem; font-weight:700; color:var(--text-3); letter-spacing:0.06em; padding:8px 10px; border-bottom:1px solid var(--border); text-transform:uppercase; }
+.compare-tbl th:first-child { text-align:left; }
+.compare-tbl td { padding:10px 10px; font-size:0.82rem; text-align:right; font-family:var(--mono); border-bottom:1px solid var(--surface); }
+.compare-tbl td:first-child { text-align:left; font-family:var(--font); font-size:0.83rem; font-weight:500; }
+.compare-tbl tbody tr:hover { background:var(--surface); }
+.best { color:var(--green); font-weight:700; } .worst { color:var(--red); }
+.form-card { background:var(--white); border-radius:var(--r); padding:22px; box-shadow:var(--shadow); margin-bottom:14px; }
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px; }
+.fg { display:flex; flex-direction:column; gap:5px; }
+.fg label { font-size:0.68rem; font-weight:600; color:var(--text-2); letter-spacing:0.04em; }
+.fg input { border:1.5px solid var(--border); border-radius:8px; padding:9px 12px; font-family:var(--mono); font-size:0.85rem; color:var(--text); background:var(--surface); outline:none; transition:border-color 0.15s,background 0.15s; }
+.fg input:focus { border-color:var(--blue); background:white; }
+.fg input::placeholder { color:var(--text-3); }
+.form-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+.btn-primary { display:inline-flex; align-items:center; gap:6px; padding:9px 22px; background:var(--blue); color:white; border:none; border-radius:50px; font-size:0.82rem; font-weight:700; font-family:var(--font); cursor:pointer; box-shadow:0 3px 10px rgba(37,99,235,0.28); transition:opacity 0.15s,transform 0.15s; }
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-danger { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; background:var(--surface); color:var(--red); border:1.5px solid var(--border); border-radius:50px; font-size:0.82rem; font-weight:700; font-family:var(--font); cursor:pointer; transition:background 0.15s; }
+.btn-danger:hover { background:var(--red-lt); border-color:var(--red); }
+.empty { text-align:center; padding:56px 20px; color:var(--text-2); }
+.em-ic { font-size:2.5rem; margin-bottom:12px; opacity:0.4; }
+.em-t { font-size:0.95rem; font-weight:600; margin-bottom:4px; }
+.em-s { font-size:0.78rem; color:var(--text-3); }
+.toast { position:fixed; bottom:24px; right:24px; background:var(--text); color:white; padding:12px 20px; border-radius:50px; font-size:0.82rem; font-weight:600; z-index:999; opacity:0; transform:translateY(12px); transition:all 0.28s; pointer-events:none; box-shadow:var(--shadow-md); }
+.toast.show { opacity:1; transform:translateY(0); }
+@media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } .board { grid-template-columns:1fr; } }
+@media(max-width:720px) { .sidebar { display:none; } .main { margin-left:0; } }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="wrapper">
-    <div class="header-inner">
-      <div class="brand">
-        <span class="brand-name">วิภาทรัพย์</span>
-        <span class="brand-sub"><span class="status-dot"></span>FINANCIAL DASHBOARD</span>
-      </div>
-      <div style="font-size:0.72rem; font-family:var(--mono); color:var(--text-dim);" id="current-date-display"></div>
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">วภ</div>
+    <div class="logo-name">วิภาทรัพย์<span>Financial Dashboard</span></div>
+  </div>
+  <div class="nav-label">เมนูหลัก</div>
+  <button class="nav-item active" onclick="setSection('overview',this)"><span class="nav-icon">📊</span>ภาพรวม<span class="nav-badge" id="nb">0</span></button>
+  <button class="nav-item" onclick="setSection('income',this)"><span class="nav-icon">📈</span>รายได้</button>
+  <button class="nav-item" onclick="setSection('expense',this)"><span class="nav-icon">📉</span>รายจ่าย</button>
+  <button class="nav-item" onclick="setSection('profit',this)"><span class="nav-icon">💰</span>กำไร</button>
+  <button class="nav-item" onclick="setSection('compare',this)"><span class="nav-icon">🔁</span>เปรียบเทียบ</button>
+  <div class="sidebar-divider"></div>
+  <div class="nav-label">จัดการ</div>
+  <button class="nav-item" onclick="setSection('input',this)"><span class="nav-icon">✏️</span>กรอกข้อมูล</button>
+  <div class="sidebar-footer">
+    <div class="company-tag">
+      <div class="company-avatar">บจก</div>
+      <div><div class="c-name">วิภาทรัพย์ จำกัด</div><div class="c-sub">ปี 2026 – 2030</div></div>
     </div>
   </div>
-</header>
-
-<div class="wrapper">
-
-  <!-- SELECTOR -->
-  <div class="selector-bar">
-    <div class="selector-label">เลือกปีและเดือน</div>
-    <div class="year-row" id="year-row"></div>
-    <div class="month-row" id="month-row"></div>
+</aside>
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <div><div class="big-num" id="topbar-num">—</div><span class="big-sub" id="topbar-sub">รายได้รวมเดือนนี้</span></div>
+      <span style="color:var(--text-3);font-size:0.9rem;">฿</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="tab-group" id="year-tabs"></div>
+      <div class="period-chip"><span class="dot"></span><span id="topbar-period">—</span></div>
+    </div>
   </div>
-
-  <div id="main-content"></div>
-
+  <div class="selector-row">
+    <span class="sel-label">เดือน :</span>
+    <div class="month-chips" id="month-chips"></div>
+  </div>
+  <div class="content" id="main-content"></div>
 </div>
-
-<div class="toast" id="toast">บันทึกข้อมูลแล้ว ✓</div>
-
-<footer>
-  <div class="wrapper">
-    บริษัท วิภาทรัพย์ จำกัด &nbsp;·&nbsp; Financial Template 2026–2030 &nbsp;·&nbsp; ข้อมูลจัดทำโดยอัตโนมัติ
-  </div>
-</footer>
-
+<div class="toast" id="toast"></div>
 <script>
-// ─── DATA STORE ───────────────────────────────────────────────
-const MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const YEARS = [2026, 2027, 2028, 2029, 2030];
+const MTH=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const YEARS=[2026,2027,2028,2029,2030];
+const PRE={'2026-1':{revenue_sales:99900,revenue_gas:18840,revenue_transfer:2230,revenue_longan:3380,exp_stock:54505,exp_stock_yay:33649,exp_gas:16768,exp_longan_labor:1793,exp_deco:0,profit_net:17635},'2026-2':{revenue_sales:79324,revenue_gas:15500,revenue_transfer:2275,revenue_longan:1824,exp_stock:54481,exp_stock_yay:17522,exp_gas:13640,exp_longan_labor:728,exp_deco:0,profit_net:7552},'2026-3':{revenue_sales:90119,revenue_gas:21500,revenue_transfer:2066,revenue_longan:1248,exp_stock:70562,exp_stock_yay:7717,exp_gas:18920,exp_longan_labor:486,exp_deco:0,profit_net:12248},'2026-4':{revenue_sales:95322,revenue_gas:15240,revenue_transfer:1898,revenue_longan:880,exp_stock:63333,exp_stock_yay:3000,exp_gas:13350,exp_longan_labor:0,exp_deco:0,profit_net:28657}};
+let db={};
+try{const r=localStorage.getItem('wvx2');if(r)db=JSON.parse(r);}catch(e){}
+Object.entries(PRE).forEach(([k,v])=>{if(!db[k])db[k]=v;});
+function sdb(){try{localStorage.setItem('wvx2',JSON.stringify(db));}catch(e){}}
+let selYear=2026,selMonth=4,curSec='overview';
+const key=(y,m)=>`${y}-${m}`;
+const gd=(y,m)=>db[key(y,m)]||null;
+function calc(d){if(!d)return null;const rev=(d.revenue_sales||0)+(d.revenue_gas||0)+(d.revenue_transfer||0)+(d.revenue_longan||0);const exp=(d.exp_stock||0)+(d.exp_stock_yay||0)+(d.exp_gas||0)+(d.exp_longan_labor||0)+(d.exp_deco||0);const net=d.profit_net!==undefined?d.profit_net:rev-exp-5000;return{rev,exp,net,margin:rev?(net/rev*100):0};}
+const fmt=n=>n==null||isNaN(n)?'—':Number(n).toLocaleString('th-TH',{maximumFractionDigits:0});
+const fmtK=n=>{if(!n&&n!==0)return'—';return Math.abs(n)>=1000?(n/1000).toFixed(1)+'K':n.toFixed(0);};
+function chg(c,p){if(!p)return null;const v=((c-p)/Math.abs(p)*100);return{p:Math.abs(v).toFixed(1),up:v>=0};}
 
-// Preloaded data from documents
-const PRELOADED = {
-  '2026-1': {
-    revenue_sales: 99900, revenue_gas: 18840, revenue_transfer: 2230, revenue_longan: 3380,
-    exp_stock: 54505, exp_stock_yay: 33649, exp_gas: 16768, exp_longan_labor: 1793, exp_deco: 0,
-    savings_transfer: 1300, savings_topup: 6000, savings_longan: 1000, savings_stock: 5000,
-    profit_net: 17635
-  },
-  '2026-2': {
-    revenue_sales: 79324, revenue_gas: 15500, revenue_transfer: 2275, revenue_longan: 1824,
-    exp_stock: 54481, exp_stock_yay: 17522, exp_gas: 13640, exp_longan_labor: 728, exp_deco: 0,
-    savings_transfer: 1500, savings_topup: 6000, savings_longan: 1000, savings_stock: 5000,
-    profit_net: 7552
-  },
-  '2026-3': {
-    revenue_sales: 90119, revenue_gas: 21500, revenue_transfer: 2066, revenue_longan: 1248,
-    exp_stock: 70562, exp_stock_yay: 7717, exp_gas: 18920, exp_longan_labor: 486, exp_deco: 0,
-    savings_transfer: 1500, savings_topup: 6000, savings_longan: 1000, savings_stock: 5000,
-    profit_net: 12248
-  },
-  '2026-4': {
-    revenue_sales: 95322, revenue_gas: 15240, revenue_transfer: 1898, revenue_longan: 880,
-    exp_stock: 63333, exp_stock_yay: 3000, exp_gas: 13350, exp_longan_labor: 0, exp_deco: 0,
-    savings_transfer: 1500, savings_topup: 6000, savings_longan: 1000, savings_stock: 5000,
-    profit_net: 28657
+function renderSel(){
+  document.getElementById('year-tabs').innerHTML=YEARS.map(y=>`<button class="tab-btn ${y===selYear?'active':''}" onclick="selYear=${y};selMonth=1;render()">${y}</button>`).join('');
+  document.getElementById('month-chips').innerHTML=MS.map((m,i)=>{const mn=i+1,has=!!db[key(selYear,mn)];return`<button class="month-chip ${mn===selMonth?'active':''} ${has?'has-data':'no-data'}" onclick="selMonth=${mn};render()">${m}</button>`;}).join('');
+}
+function renderTop(){
+  const d=gd(selYear,selMonth),t=calc(d);
+  document.getElementById('topbar-num').textContent=t?fmt(t.rev):'—';
+  document.getElementById('topbar-period').textContent=`${MTH[selMonth-1]} ${selYear}`;
+  let cnt=0;for(let m=1;m<=12;m++)if(db[key(selYear,m)])cnt++;
+  document.getElementById('nb').textContent=cnt+' เดือน';
+}
+function setSection(s,el){curSec=s;document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));el.classList.add('active');render();}
+
+function render(){renderSel();renderTop();const d=gd(selYear,selMonth),t=calc(d),el=document.getElementById('main-content');
+  switch(curSec){
+    case'overview':el.innerHTML=renderOverview(d,t);setTimeout(()=>drawChart(),60);break;
+    case'income':el.innerHTML=renderIncome(d,t);break;
+    case'expense':el.innerHTML=renderExpense(d,t);break;
+    case'profit':el.innerHTML=renderProfit(d,t);break;
+    case'compare':el.innerHTML=renderCompare();break;
+    case'input':el.innerHTML=renderForm(d);break;
   }
-};
-
-// Storage key
-const STORE_KEY = 'wiphatsap_data';
-let db = {};
-try {
-  const raw = localStorage.getItem(STORE_KEY);
-  if (raw) db = JSON.parse(raw);
-} catch(e) {}
-
-// Merge preloaded
-Object.entries(PRELOADED).forEach(([k,v]) => { if(!db[k]) db[k] = v; });
-
-function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch(e){}
 }
 
-// ─── STATE ────────────────────────────────────────────────────
-let selYear = 2026;
-let selMonth = 1;
+function badge(c){if(!c)return'';return`<span class="kpi-badge ${c.up?'badge-up':'badge-down'}">${c.up?'▲':'▼'}${c.p}%</span>`;}
 
-// ─── UTILS ────────────────────────────────────────────────────
-function fmt(n) {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  return Number(n).toLocaleString('th-TH', {minimumFractionDigits:0, maximumFractionDigits:0});
-}
-function pct(a,b) {
-  if (!b) return '—';
-  return (a/b*100).toFixed(1) + '%';
-}
-function key(y,m) { return `${y}-${m}`; }
-function getData(y,m) { return db[key(y,m)] || null; }
-function change(cur, prev) {
-  if (!cur || !prev || prev===0) return null;
-  return ((cur - prev) / prev * 100).toFixed(1);
-}
-
-// ─── RENDER SELECTORS ─────────────────────────────────────────
-function renderSelectors() {
-  const yrEl = document.getElementById('year-row');
-  yrEl.innerHTML = YEARS.map(y =>
-    `<button class="year-btn ${y===selYear?'active':''}" onclick="selectYear(${y})">${y}</button>`
-  ).join('');
-
-  const moEl = document.getElementById('month-row');
-  moEl.innerHTML = MONTHS_TH.map((m,i) => {
-    const mn = i+1;
-    const has = !!db[key(selYear,mn)];
-    const active = mn===selMonth ? 'active' : '';
-    const dataClass = has ? 'has-data' : 'no-data';
-    return `<button class="month-btn ${active} ${dataClass}" onclick="selectMonth(${mn})">${m}</button>`;
-  }).join('');
-}
-
-function selectYear(y) { selYear=y; selMonth=1; renderSelectors(); renderContent(); }
-function selectMonth(m) { selMonth=m; renderSelectors(); renderContent(); }
-
-// ─── RENDER CONTENT ───────────────────────────────────────────
-function renderContent() {
-  const el = document.getElementById('main-content');
-  const d = getData(selYear, selMonth);
-  const prevKey = selMonth > 1 ? key(selYear, selMonth-1) : key(selYear-1, 12);
-  const prev = db[prevKey] || null;
-
-  if (!d) {
-    el.innerHTML = renderInputForm() + renderEmptyWithCompare();
-    return;
-  }
-
-  const totalRev = (d.revenue_sales||0) + (d.revenue_gas||0) + (d.revenue_transfer||0) + (d.revenue_longan||0);
-  const totalExp = (d.exp_stock||0) + (d.exp_stock_yay||0) + (d.exp_gas||0) + (d.exp_longan_labor||0) + (d.exp_deco||0);
-  const grossProfit = totalRev - totalExp;
-  const workingCap = 5000;
-  const netProfit = d.profit_net !== undefined ? d.profit_net : grossProfit - workingCap;
-  const marginPct = totalRev ? (netProfit/totalRev*100).toFixed(1) : 0;
-
-  const chgRev = prev ? change(totalRev, (prev.revenue_sales||0)+(prev.revenue_gas||0)+(prev.revenue_transfer||0)+(prev.revenue_longan||0)) : null;
-  const chgProfit = prev ? change(netProfit, prev.profit_net||0) : null;
-
-  el.innerHTML = `
-    ${renderPeriodLabel()}
-    ${renderKPIs(d, totalRev, totalExp, netProfit, marginPct, chgRev, chgProfit)}
-    ${renderInputForm(d)}
-    <div class="main-grid">
-      ${renderIncomeStatement(d, totalRev, totalExp, grossProfit, netProfit)}
-      ${renderBreakdownPanel(d, totalRev, totalExp)}
+function renderOverview(d,t){
+  if(!d)return`<div class="form-card">${fi(null)}</div>${renderCompare()}`;
+  const pd=calc(gd(selYear,selMonth>1?selMonth-1:12));
+  const cR=pd?chg(t.rev,pd.rev):null,cE=pd?chg(t.exp,pd.exp):null,cN=pd?chg(t.net,pd.net):null;
+  return`<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-lt)">📈</div>${badge(cR)}</div><div class="kpi-val" style="color:var(--blue)">${fmt(t.rev)}</div><div class="kpi-lbl">รายได้รวม (฿)</div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--red-lt)">📉</div>${badge(cE?{p:cE.p,up:!cE.up}:null)}</div><div class="kpi-val" style="color:var(--red)">${fmt(t.exp)}</div><div class="kpi-lbl">รายจ่ายรวม (฿)</div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--green-lt)">💰</div>${badge(cN)}</div><div class="kpi-val" style="color:var(--green)">${fmt(t.net)}</div><div class="kpi-lbl">กำไรสุทธิ (฿)</div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--amber-lt)">📊</div></div><div class="kpi-val" style="color:var(--amber)">${t.margin.toFixed(1)}%</div><div class="kpi-lbl">อัตรากำไรสุทธิ</div></div>
+  </div>
+  <div class="board">
+    <div class="card">
+      <div class="card-title"><div class="ct-icon" style="background:var(--blue-lt)">📊</div>กราฟเปรียบเทียบปี ${selYear}</div>
+      <div class="chart-legend">
+        <span class="cl-item"><span class="cl-dot" style="background:var(--blue)"></span>รายได้</span>
+        <span class="cl-item"><span class="cl-dot" style="background:var(--red)"></span>รายจ่าย</span>
+        <span class="cl-item"><span class="cl-dot" style="background:var(--green);border-radius:50%"></span>กำไร</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-combined" height="260"></canvas><div class="chart-tt" id="tt-c"></div></div>
     </div>
-    ${renderSavings(d)}
-    ${renderCharts()}
-    ${renderCompare()}
-  `;
-  setTimeout(drawCharts, 60);
-}
-
-function renderPeriodLabel() {
-  return `
-    <div class="period-label">
-      <span style="color:var(--accent);font-size:0.9rem;">📅</span>
-      <span class="period-text">งบการเงิน — ${MONTHS_TH[selMonth-1]} ${selYear} (พ.ศ. ${selYear+543})</span>
-      <span class="period-sub">บริษัท วิภาทรัพย์ จำกัด</span>
-    </div>
-  `;
-}
-
-function renderKPIs(d, totalRev, totalExp, netProfit, marginPct, chgRev, chgProfit) {
-  const revChg = chgRev ? `<span class="kpi-change ${chgRev>=0?'up':'down'}">${chgRev>=0?'▲':'▼'} ${Math.abs(chgRev)}%</span>` : '';
-  const prChg = chgProfit ? `<span class="kpi-change ${chgProfit>=0?'up':'down'}">${chgProfit>=0?'▲':'▼'} ${Math.abs(chgProfit)}%</span>` : '';
-  return `
-    <div class="kpi-grid">
-      <div class="kpi-card revenue">
-        <div class="kpi-label">รายได้รวม</div>
-        <div class="kpi-value">${fmt(totalRev)}</div>
-        <div class="kpi-sub">บาท</div>
-        ${revChg}
-      </div>
-      <div class="kpi-card expense">
-        <div class="kpi-label">รายจ่ายรวม</div>
-        <div class="kpi-value">${fmt(totalExp)}</div>
-        <div class="kpi-sub">บาท</div>
-      </div>
-      <div class="kpi-card profit">
-        <div class="kpi-label">กำไรสุทธิ</div>
-        <div class="kpi-value">${fmt(netProfit)}</div>
-        <div class="kpi-sub">บาท</div>
-        ${prChg}
-      </div>
-      <div class="kpi-card margin">
-        <div class="kpi-label">อัตรากำไร</div>
-        <div class="kpi-value">${marginPct}%</div>
-        <div class="kpi-sub">net margin</div>
-      </div>
-      <div class="kpi-card gas">
-        <div class="kpi-label">รายได้แก๊ส</div>
-        <div class="kpi-value" style="color:#b56a00;">${fmt(d.revenue_gas)}</div>
-        <div class="kpi-sub">กำไร ${fmt((d.revenue_gas||0)-(d.exp_gas||0))} บาท</div>
-      </div>
-      <div class="kpi-card transfer">
-        <div class="kpi-label">โอนเงิน/เติมเงิน</div>
-        <div class="kpi-value">${fmt(d.revenue_transfer)}</div>
-        <div class="kpi-sub">100% กำไร</div>
-      </div>
-      <div class="kpi-card longan">
-        <div class="kpi-label">รายได้ลำไย</div>
-        <div class="kpi-value">${fmt(d.revenue_longan)}</div>
-        <div class="kpi-sub">กำไร ${fmt((d.revenue_longan||0)-(d.exp_longan_labor||0))} บาท</div>
-      </div>
-    </div>
-  `;
-}
-
-function renderIncomeStatement(d, totalRev, totalExp, grossProfit, netProfit) {
-  return `
-    <div class="panel">
-      <div class="section-title">งบกำไรขาดทุน</div>
-      <table class="stmt-table">
-        <tr><td class="row-section" colspan="2">รายได้</td></tr>
-        <tr>
-          <td class="row-indent">รายได้จากการขาย</td>
-          <td class="txt-revenue">${fmt(d.revenue_sales)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">รายได้จากการขายแก๊ส</td>
-          <td class="txt-revenue">${fmt(d.revenue_gas)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">รายได้บริการโอนเงิน/เติมเงิน</td>
-          <td class="txt-revenue">${fmt(d.revenue_transfer)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">รายได้จากการขายลำไย</td>
-          <td class="txt-revenue">${fmt(d.revenue_longan)}</td>
-        </tr>
-        <tr class="row-total">
-          <td><strong>รวมรายได้</strong></td>
-          <td class="txt-revenue"><strong>${fmt(totalRev)}</strong></td>
-        </tr>
-
-        <tr><td class="row-section" colspan="2">ค่าใช้จ่าย</td></tr>
-        <tr>
-          <td class="row-indent">ค่าซื้อสินค้าเข้าสต็อก</td>
-          <td class="txt-expense">${fmt(d.exp_stock)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">ค่าซื้อสินค้า (ร้านยาย)</td>
-          <td class="txt-expense">${fmt(d.exp_stock_yay)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">ค่าซื้อแก๊สถัง</td>
-          <td class="txt-expense">${fmt(d.exp_gas)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">ค่าจ้างแกะลำไย</td>
-          <td class="txt-expense">${fmt(d.exp_longan_labor)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent">ค่าตกแต่งร้าน</td>
-          <td class="txt-expense">${fmt(d.exp_deco||0)}</td>
-        </tr>
-        <tr class="row-total">
-          <td><strong>รวมค่าใช้จ่าย</strong></td>
-          <td class="txt-expense"><strong>${fmt(totalExp)}</strong></td>
-        </tr>
-
-        <tr><td colspan="2" style="padding:8px 0;"></td></tr>
-        <tr>
-          <td>กำไรก่อนเงินหมุนเวียน</td>
-          <td class="txt-profit">${fmt(grossProfit)}</td>
-        </tr>
-        <tr>
-          <td class="row-indent" style="color:var(--text-muted)">เงินหมุนเวียนในการซื้อสินค้า</td>
-          <td style="color:var(--text-muted)">5,000</td>
-        </tr>
-        <tr class="row-net">
-          <td>กำไรสุทธิ</td>
-          <td>${fmt(netProfit)}</td>
-        </tr>
+    <div class="card">
+      <div class="card-title"><div class="ct-icon" style="background:var(--green-lt)">📋</div>งบกำไรขาดทุน — ${MTH[selMonth-1]}</div>
+      <table class="stmt">
+        <tr class="sec-row"><td colspan="2">รายได้</td></tr>
+        <tr><td class="indent">ขายสินค้า</td><td class="txt-rev">${fmt(d.revenue_sales)}</td></tr>
+        <tr><td class="indent">แก๊สถัง</td><td class="txt-rev">${fmt(d.revenue_gas)}</td></tr>
+        <tr><td class="indent">โอน/เติมเงิน</td><td class="txt-rev">${fmt(d.revenue_transfer)}</td></tr>
+        <tr><td class="indent">ลำไย</td><td class="txt-rev">${fmt(d.revenue_longan)}</td></tr>
+        <tr class="total-row"><td>รวมรายได้</td><td class="txt-rev">${fmt(t.rev)}</td></tr>
+        <tr class="sec-row"><td colspan="2">ค่าใช้จ่าย</td></tr>
+        <tr><td class="indent">สต็อกร้านหลัก</td><td class="txt-exp">${fmt(d.exp_stock)}</td></tr>
+        <tr><td class="indent">สต็อกร้านยาย</td><td class="txt-exp">${fmt(d.exp_stock_yay)}</td></tr>
+        <tr><td class="indent">ซื้อแก๊ส</td><td class="txt-exp">${fmt(d.exp_gas)}</td></tr>
+        <tr><td class="indent">ค่าแรงลำไย</td><td class="txt-exp">${fmt(d.exp_longan_labor)}</td></tr>
+        <tr class="total-row"><td>รวมค่าใช้จ่าย</td><td class="txt-exp">${fmt(t.exp)}</td></tr>
+        <tr class="net-row"><td>กำไรสุทธิ</td><td>${fmt(t.net)}</td></tr>
       </table>
     </div>
-  `;
-}
-
-function renderBreakdownPanel(d, totalRev, totalExp) {
-  const maxBar = totalRev;
-  function bar(label, val, color, maxV) {
-    const w = maxV ? Math.max(4, Math.round(val/maxV*100)) : 0;
-    return `
-      <div class="bar-row">
-        <div class="bar-row-label">${label}</div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width:${w}%;background:${color};">
-            <span class="bar-fill-label">${fmt(val)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-  return `
-    <div class="panel">
-      <div class="section-title">รายได้ตามประเภท</div>
-      <div class="bar-chart" style="margin-bottom:24px;">
-        ${bar('ขายสินค้า', d.revenue_sales||0, 'var(--accent)', maxBar)}
-        ${bar('แก๊สถัง', d.revenue_gas||0, 'var(--gas)', maxBar)}
-        ${bar('โอนเงิน', d.revenue_transfer||0, 'var(--transfer)', maxBar)}
-        ${bar('ลำไย', d.revenue_longan||0, 'var(--longan)', maxBar)}
-      </div>
-
-      <div class="section-title">ค่าใช้จ่ายตามประเภท</div>
-      <div class="bar-chart">
-        ${bar('สต็อกหลัก', d.exp_stock||0, 'rgba(239,68,68,0.7)', totalExp)}
-        ${bar('ร้านยาย', d.exp_stock_yay||0, 'rgba(239,68,68,0.45)', totalExp)}
-        ${bar('แก๊ส', d.exp_gas||0, 'rgba(245,158,11,0.7)', totalExp)}
-        ${bar('แรงงานลำไย', d.exp_longan_labor||0, 'rgba(251,146,60,0.6)', totalExp)}
-        ${bar('ตกแต่งร้าน', d.exp_deco||0, 'rgba(129,140,248,0.5)', totalExp)}
-      </div>
+  </div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title"><div class="ct-icon" style="background:var(--purple-lt)">🏦</div>เงินสำรองในระบบ</div>
+    <div class="sav-grid">
+      <div class="sav-item"><div class="sav-ic" style="background:var(--blue-lt)">💳</div><div><div class="sav-lbl">บริการเติมเงิน</div><div class="sav-val">1,500 ฿</div></div></div>
+      <div class="sav-item"><div class="sav-ic" style="background:var(--purple-lt)">🏦</div><div><div class="sav-lbl">บริการโอนเงิน</div><div class="sav-val">6,000 ฿</div></div></div>
+      <div class="sav-item"><div class="sav-ic" style="background:var(--amber-lt)">🍈</div><div><div class="sav-lbl">ค่าจ้างแกะลำไย</div><div class="sav-val">1,000 ฿</div></div></div>
+      <div class="sav-item"><div class="sav-ic" style="background:var(--green-lt)">🛒</div><div><div class="sav-lbl">ทุนซื้อสินค้า</div><div class="sav-val">5,000 ฿</div></div></div>
     </div>
-  `;
+  </div>`;
 }
 
-function renderSavings(d) {
-  return `
-    <div class="savings-section">
-      <div class="section-title">เงินสำรองในระบบ</div>
-      <div class="savings-grid">
-        <div class="savings-item">
-          <div class="savings-icon green">💳</div>
-          <div class="savings-meta">
-            <div class="s-label">บริการเติมเงิน</div>
-            <div class="s-val">${fmt(d.savings_transfer||1500)} บาท</div>
-          </div>
-        </div>
-        <div class="savings-item">
-          <div class="savings-icon blue">🏦</div>
-          <div class="savings-meta">
-            <div class="s-label">บริการโอนเงิน</div>
-            <div class="s-val">${fmt(d.savings_topup||6000)} บาท</div>
-          </div>
-        </div>
-        <div class="savings-item">
-          <div class="savings-icon orange">🍈</div>
-          <div class="savings-meta">
-            <div class="s-label">ค่าจ้างแกะลำไย</div>
-            <div class="s-val">${fmt(d.savings_longan||1000)} บาท</div>
-          </div>
-        </div>
-        <div class="savings-item">
-          <div class="savings-icon amber">🛒</div>
-          <div class="savings-meta">
-            <div class="s-label">ทุนซื้อสินค้า</div>
-            <div class="s-val">${fmt(d.savings_stock||5000)} บาท</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+function bbar(lbl,v,mx,col){const w=Math.max(3,Math.round(v/mx*100));return`<div class="bbar-row"><div class="bbar-label">${lbl}</div><div class="bbar-track"><div class="bbar-fill" style="width:${w}%;background:${col}"><span class="bbar-fill-lbl">${fmt(v)}</span></div></div></div>`;}
+
+function renderIncome(d,t){
+  if(!d)return`<div class="card"><div class="empty"><div class="em-ic">📈</div><div class="em-t">ยังไม่มีข้อมูลเดือนนี้</div><div class="em-s">ไปที่เมนู "กรอกข้อมูล" เพื่อเพิ่มข้อมูล</div></div></div>`;
+  const mx=t.rev||1;
+  return`<div class="kpi-grid"><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-lt)">🏪</div></div><div class="kpi-val" style="color:var(--blue)">${fmt(d.revenue_sales)}</div><div class="kpi-lbl">ขายสินค้า</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--amber-lt)">🔥</div></div><div class="kpi-val" style="color:var(--amber)">${fmt(d.revenue_gas)}</div><div class="kpi-lbl">ขายแก๊ส</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--purple-lt)">📱</div></div><div class="kpi-val" style="color:var(--purple)">${fmt(d.revenue_transfer)}</div><div class="kpi-lbl">โอน/เติมเงิน</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--green-lt)">🍈</div></div><div class="kpi-val" style="color:var(--green)">${fmt(d.revenue_longan)}</div><div class="kpi-lbl">ลำไย</div></div></div>
+  <div class="card">${bbar('ขายสินค้า',d.revenue_sales||0,mx,'var(--blue)')+bbar('แก๊สถัง',d.revenue_gas||0,mx,'var(--amber)')+bbar('โอน/เติมเงิน',d.revenue_transfer||0,mx,'var(--purple)')+bbar('ลำไย',d.revenue_longan||0,mx,'var(--green)')}<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;color:var(--text-2);font-weight:600;">รวมรายได้</span><span style="font-size:1.1rem;font-weight:800;font-family:var(--mono);color:var(--blue)">${fmt(t.rev)} ฿</span></div></div>`;
 }
 
-function renderInputForm(d) {
-  const v = d || {};
-  return `
-    <div class="input-section">
-      <div class="section-title" style="margin-bottom:16px;">✏️ กรอก / แก้ไขข้อมูล — ${MONTHS_TH[selMonth-1]} ${selYear}</div>
-      <div class="input-grid">
-        <div class="input-group">
-          <label>รายได้จากการขายสินค้า (฿)</label>
-          <input id="f_rev_sales" type="number" placeholder="0" value="${v.revenue_sales||''}">
-        </div>
-        <div class="input-group">
-          <label>รายได้จากการขายแก๊ส (฿)</label>
-          <input id="f_rev_gas" type="number" placeholder="0" value="${v.revenue_gas||''}">
-        </div>
-        <div class="input-group">
-          <label>รายได้บริการโอนเงิน/เติมเงิน (฿)</label>
-          <input id="f_rev_transfer" type="number" placeholder="0" value="${v.revenue_transfer||''}">
-        </div>
-        <div class="input-group">
-          <label>รายได้จากการขายลำไย (฿)</label>
-          <input id="f_rev_longan" type="number" placeholder="0" value="${v.revenue_longan||''}">
-        </div>
-        <div class="input-group">
-          <label>ค่าซื้อสินค้าเข้าสต็อก — ร้านหลัก (฿)</label>
-          <input id="f_exp_stock" type="number" placeholder="0" value="${v.exp_stock||''}">
-        </div>
-        <div class="input-group">
-          <label>ค่าซื้อสินค้าเข้าสต็อก — ร้านยาย (฿)</label>
-          <input id="f_exp_stock_yay" type="number" placeholder="0" value="${v.exp_stock_yay||''}">
-        </div>
-        <div class="input-group">
-          <label>ค่าซื้อแก๊สถัง (฿)</label>
-          <input id="f_exp_gas" type="number" placeholder="0" value="${v.exp_gas||''}">
-        </div>
-        <div class="input-group">
-          <label>ค่าจ้างแกะลำไย (฿)</label>
-          <input id="f_exp_longan" type="number" placeholder="0" value="${v.exp_longan_labor||''}">
-        </div>
-        <div class="input-group">
-          <label>ค่าตกแต่งร้าน (฿)</label>
-          <input id="f_exp_deco" type="number" placeholder="0" value="${v.exp_deco||''}">
-        </div>
-        <div class="input-group">
-          <label>กำไรสุทธิ (คำนวณเอง หรือกรอกเอง) (฿)</label>
-          <input id="f_profit_net" type="number" placeholder="คำนวณอัตโนมัติ" value="${v.profit_net||''}">
-        </div>
-      </div>
-      <button class="save-btn" onclick="saveData()">💾 บันทึกข้อมูล</button>
-      ${d ? `<button class="save-btn" style="background:rgba(239,68,68,0.15);color:var(--accent3);margin-left:8px;" onclick="clearData()">🗑️ ลบข้อมูลเดือนนี้</button>` : ''}
-    </div>
-  `;
+function renderExpense(d,t){
+  if(!d)return`<div class="card"><div class="empty"><div class="em-ic">📉</div><div class="em-t">ยังไม่มีข้อมูลเดือนนี้</div></div></div>`;
+  const mx=t.exp||1;
+  return`<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)"><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--red-lt)">🛒</div></div><div class="kpi-val" style="color:var(--red)">${fmt((d.exp_stock||0)+(d.exp_stock_yay||0))}</div><div class="kpi-lbl">ค่าสต็อกรวม</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--amber-lt)">🔥</div></div><div class="kpi-val" style="color:var(--amber)">${fmt(d.exp_gas)}</div><div class="kpi-lbl">ซื้อแก๊ส</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--green-lt)">🍈</div></div><div class="kpi-val" style="color:var(--green)">${fmt(d.exp_longan_labor)}</div><div class="kpi-lbl">ค่าแรงลำไย</div></div></div>
+  <div class="card">${bbar('สต็อกหลัก',d.exp_stock||0,mx,'var(--red)')+bbar('ร้านยาย',d.exp_stock_yay||0,mx,'rgba(220,38,38,0.5)')+bbar('ซื้อแก๊ส',d.exp_gas||0,mx,'var(--amber)')+bbar('ค่าแรงลำไย',d.exp_longan_labor||0,mx,'var(--green)')+bbar('ตกแต่งร้าน',d.exp_deco||0,mx,'var(--purple)')}<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;color:var(--text-2);font-weight:600;">รวมรายจ่าย</span><span style="font-size:1.1rem;font-weight:800;font-family:var(--mono);color:var(--red)">${fmt(t.exp)} ฿</span></div></div>`;
 }
 
-function renderEmptyWithCompare() {
-  return `
-    <div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">ยังไม่มีข้อมูลเดือน${MONTHS_TH[selMonth-1]} ${selYear}</div>
-      <div class="empty-sub">กรอกข้อมูลด้านบนแล้วกด "บันทึกข้อมูล"</div>
-    </div>
-    ${renderCompare()}
-  `;
+function renderProfit(d,t){
+  if(!d)return`<div class="card"><div class="empty"><div class="em-ic">💰</div><div class="em-t">ยังไม่มีข้อมูลเดือนนี้</div></div></div>`;
+  return`<div class="kpi-grid"><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--green-lt)">💰</div></div><div class="kpi-val" style="color:var(--green)">${fmt(t.net)}</div><div class="kpi-lbl">กำไรสุทธิ (฿)</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--amber-lt)">🔥</div></div><div class="kpi-val" style="color:var(--amber)">${fmt((d.revenue_gas||0)-(d.exp_gas||0))}</div><div class="kpi-lbl">กำไรแก๊ส</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--purple-lt)">📱</div></div><div class="kpi-val" style="color:var(--purple)">${fmt(d.revenue_transfer||0)}</div><div class="kpi-lbl">กำไรโอนเงิน</div></div><div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background:var(--green-lt)">🍈</div></div><div class="kpi-val" style="color:var(--green)">${fmt((d.revenue_longan||0)-(d.exp_longan_labor||0))}</div><div class="kpi-lbl">กำไรลำไย</div></div></div>
+  <div class="card"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><div style="padding:20px;background:var(--green-lt);border-radius:var(--r-sm);"><div style="font-size:0.7rem;color:var(--green);font-weight:700;margin-bottom:8px;">อัตรากำไรสุทธิ</div><div style="font-size:2rem;font-weight:800;font-family:var(--mono);color:var(--green)">${t.margin.toFixed(1)}%</div></div><div style="padding:20px;background:var(--blue-lt);border-radius:var(--r-sm);"><div style="font-size:0.7rem;color:var(--blue);font-weight:700;margin-bottom:8px;">รายได้เหนือรายจ่าย</div><div style="font-size:2rem;font-weight:800;font-family:var(--mono);color:var(--blue)">${fmt(t.rev-t.exp)}</div><div style="font-size:0.7rem;color:var(--text-2)">ก่อนหักทุนหมุนเวียน</div></div></div></div>`;
 }
 
-function renderCharts() {
-  let hasAny = false;
-  for (let m = 1; m <= 12; m++) { if (db[key(selYear, m)]) { hasAny = true; break; } }
-  if (!hasAny) return '';
-  return `
-    <div class="charts-section">
-      <div class="section-title">กราฟเปรียบเทียบรายได้ · รายจ่าย · กำไร ประจำปี ${selYear}</div>
-      <div class="chart-panel">
-        <div class="chart-header">
-          <div class="chart-legend">
-            <span class="legend-item">
-              <svg width="22" height="12"><rect x="0" y="1" width="14" height="10" rx="2" fill="#d4622a" opacity="0.8"/></svg>
-              รายได้รวม
-            </span>
-            <span class="legend-item">
-              <svg width="22" height="12"><rect x="0" y="1" width="14" height="10" rx="2" fill="#c0392b" opacity="0.7"/></svg>
-              รายจ่ายรวม
-            </span>
-            <span class="legend-item">
-              <svg width="26" height="12"><line x1="0" y1="6" x2="26" y2="6" stroke="#2e7d32" stroke-width="2.5"/><circle cx="13" cy="6" r="3.5" fill="#2e7d32"/></svg>
-              กำไรสุทธิ
-            </span>
-          </div>
-          <span style="font-size:0.7rem;font-family:var(--mono);color:var(--text-muted);">hover เพื่อดูตัวเลข</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="chart-combined" height="300"></canvas>
-          <div class="chart-tooltip" id="tt-combined"></div>
-        </div>
-      </div>
-    </div>
-  `;
+function renderCompare(){
+  const entries=[];
+  for(const y of YEARS)for(let m=1;m<=12;m++){const d=db[key(y,m)];if(d){const t=calc(d);entries.push({y,m,label:`${MS[m-1]} ${y}`,...t});}}
+  if(!entries.length)return`<div class="card"><div class="empty"><div class="em-ic">🔁</div><div class="em-t">ยังไม่มีข้อมูลสำหรับเปรียบเทียบ</div><div class="em-s">กรอกข้อมูลอย่างน้อย 2 เดือน</div></div></div>`;
+  const maxR=Math.max(...entries.map(e=>e.rev)),maxN=Math.max(...entries.map(e=>e.net)),minN=Math.min(...entries.map(e=>e.net));
+  return`<div class="card"><div class="card-title"><div class="ct-icon" style="background:var(--blue-lt)">🔁</div>เปรียบเทียบทุกเดือน (${entries.length} เดือน)</div><div class="compare-wrap"><table class="compare-tbl"><thead><tr><th>เดือน</th><th>รายได้รวม (฿)</th><th>รายจ่ายรวม (฿)</th><th>กำไรสุทธิ (฿)</th><th>อัตรากำไร</th></tr></thead><tbody>${entries.map(e=>{const bR=e.rev===maxR,bN=e.net===maxN,wN=e.net===minN&&entries.length>1;const mc=e.margin>15?'var(--green)':e.margin>8?'var(--amber)':'var(--red)';return`<tr><td>${e.label}</td><td class="${bR?'best':''}">${fmt(e.rev)}</td><td>${fmt(e.exp)}</td><td class="${bN?'best':wN?'worst':''}">${fmt(e.net)}</td><td style="color:${mc};font-weight:700">${e.margin.toFixed(1)}%</td></tr>`;}).join('')}</tbody></table></div></div>`;
 }
 
-function drawCharts() {
-  const months = [];
-  for (let m = 1; m <= 12; m++) {
-    const d = db[key(selYear, m)];
-    if (d) {
-      const totalRev = (d.revenue_sales||0)+(d.revenue_gas||0)+(d.revenue_transfer||0)+(d.revenue_longan||0);
-      const totalExp = (d.exp_stock||0)+(d.exp_stock_yay||0)+(d.exp_gas||0)+(d.exp_longan_labor||0)+(d.exp_deco||0);
-      const net = d.profit_net !== undefined ? d.profit_net : totalRev - totalExp - 5000;
-      months.push({ m, label: MONTHS_TH[m-1].slice(0,3), totalRev, totalExp, net });
-    }
+function fi(d){const v=d||{};return`<div class="card-title" style="margin-bottom:0"><div class="ct-icon" style="background:var(--blue-lt)">✏️</div>กรอก / แก้ไขข้อมูล — ${MTH[selMonth-1]} ${selYear}</div><div class="form-grid"><div class="fg"><label>รายได้ขายสินค้า (฿)</label><input id="f1" type="number" placeholder="0" value="${v.revenue_sales||''}"></div><div class="fg"><label>รายได้แก๊ส (฿)</label><input id="f2" type="number" placeholder="0" value="${v.revenue_gas||''}"></div><div class="fg"><label>รายได้โอน/เติมเงิน (฿)</label><input id="f3" type="number" placeholder="0" value="${v.revenue_transfer||''}"></div><div class="fg"><label>รายได้ลำไย (฿)</label><input id="f4" type="number" placeholder="0" value="${v.revenue_longan||''}"></div><div class="fg"><label>ค่าสต็อกร้านหลัก (฿)</label><input id="f5" type="number" placeholder="0" value="${v.exp_stock||''}"></div><div class="fg"><label>ค่าสต็อกร้านยาย (฿)</label><input id="f6" type="number" placeholder="0" value="${v.exp_stock_yay||''}"></div><div class="fg"><label>ค่าซื้อแก๊ส (฿)</label><input id="f7" type="number" placeholder="0" value="${v.exp_gas||''}"></div><div class="fg"><label>ค่าแรงลำไย (฿)</label><input id="f8" type="number" placeholder="0" value="${v.exp_longan_labor||''}"></div><div class="fg"><label>ค่าตกแต่งร้าน (฿)</label><input id="f9" type="number" placeholder="0" value="${v.exp_deco||''}"></div><div class="fg"><label>กำไรสุทธิ (ปล่อยว่างคำนวณอัตโนมัติ)</label><input id="f10" type="number" placeholder="คำนวณอัตโนมัติ" value="${v.profit_net!==undefined?v.profit_net:''}"></div></div><div class="form-actions"><button class="btn-primary" onclick="saveForm()">💾 บันทึกข้อมูล</button>${d?`<button class="btn-danger" onclick="clearForm()">🗑️ ลบข้อมูลเดือนนี้</button>`:''}</div>`;}
+function renderForm(d){return`<div class="form-card">${fi(d)}</div>`;}
+
+function drawChart(){
+  const months=[];
+  for(let m=1;m<=12;m++){const d=db[key(selYear,m)];if(d){const t=calc(d);months.push({m,t});}}
+  const cv=document.getElementById('chart-combined');
+  if(!cv||!months.length)return;
+  const dpr=window.devicePixelRatio||1,rect=cv.parentElement.getBoundingClientRect();
+  const W=rect.width,H=260;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const P={t:24,r:52,b:46,l:66},cW=W-P.l-P.r,cH=H-P.t-P.b,n=months.length;
+  const rv=months.map(m=>m.t.rev),ev=months.map(m=>m.t.exp),nv=months.map(m=>m.t.net);
+  const lMx=Math.max(...rv,...ev)*1.15||1,lMn=0,rMx=Math.max(...nv)*1.35||1,rMn=Math.min(0,...nv)*1.2;
+  const lR=lMx-lMn||1,rR=rMx-rMn||1;
+  const toYL=v=>P.t+cH-((v-lMn)/lR*cH);
+  const toYR=v=>P.t+cH-((v-rMn)/rR*cH);
+  const toX=i=>P.l+(i+0.5)*(cW/n);
+  const bGap=3,bGW=Math.min(50,cW/n*0.68),bW=(bGW-bGap)/2;
+  const rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  function frame(){
+    ctx.font=`500 10px 'JetBrains Mono',monospace`;
+    for(let s=0;s<=5;s++){const v=lMn+(lR/5)*s,y=toYL(v);ctx.strokeStyle='rgba(0,0,0,0.05)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();ctx.fillStyle='#2563eb';ctx.textAlign='right';ctx.fillText(fmtK(v),P.l-6,y+3.5);}
+    ctx.textAlign='left';
+    for(let s=0;s<=4;s++){const v=rMn+(rR/4)*s,y=toYR(v);ctx.fillStyle='#16a34a';ctx.fillText(fmtK(v),P.l+cW+5,y+3.5);}
+    if(rMn<0){ctx.strokeStyle='rgba(220,38,38,0.2)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);const z=toYR(0);ctx.beginPath();ctx.moveTo(P.l,z);ctx.lineTo(P.l+cW,z);ctx.stroke();ctx.setLineDash([]);}
+    ctx.fillStyle='#6b7c6b';ctx.font=`500 10px 'Noto Sans Thai',sans-serif`;ctx.textAlign='center';
+    months.forEach((mo,i)=>{const iS=mo.m===selMonth;ctx.fillStyle=iS?'#2563eb':'#6b7c6b';ctx.font=iS?`700 10px 'Noto Sans Thai',sans-serif`:`500 10px 'Noto Sans Thai',sans-serif`;ctx.fillText(MS[mo.m-1],toX(i),H-P.b+16);});
+    const si=months.findIndex(mo=>mo.m===selMonth);if(si>=0){ctx.fillStyle='rgba(37,99,235,0.05)';ctx.fillRect(toX(si)-cW/n/2,P.t,cW/n,cH);}
   }
-  if (!months.length) return;
-
-  const canvas = document.getElementById('chart-combined');
-  if (!canvas) return;
-
-  const dpr  = window.devicePixelRatio || 1;
-  const rect  = canvas.parentElement.getBoundingClientRect();
-  const W = rect.width, H = 300;
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const PAD = { top: 28, right: 24, bottom: 46, left: 68 };
-  const cW = W - PAD.left - PAD.right;
-  const cH = H - PAD.top - PAD.bottom;
-  const n   = months.length;
-
-  // ── scale: left axis for rev/exp, right axis for profit ──
-  const revVals  = months.map(m => m.totalRev);
-  const expVals  = months.map(m => m.totalExp);
-  const netVals  = months.map(m => m.net);
-  const leftMax  = Math.max(...revVals, ...expVals) * 1.15;
-  const leftMin  = 0;
-  const rightMax = Math.max(...netVals) * 1.3 || 1;
-  const rightMin = Math.min(0, Math.min(...netVals) * 1.2);
-  const leftRange  = leftMax - leftMin || 1;
-  const rightRange = rightMax - rightMin || 1;
-
-  function toYL(v) { return PAD.top + cH - ((v - leftMin)  / leftRange  * cH); }
-  function toYR(v) { return PAD.top + cH - ((v - rightMin) / rightRange * cH); }
-  function toX(i)  { return PAD.left + (i + 0.5) * (cW / n); }
-
-  const barGap  = 4;
-  const groupW  = Math.min(56, cW / n * 0.72);
-  const singleW = (groupW - barGap) / 2;
-
-  function rgb(hex) {
-    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+  let prog=0;
+  function draw(){
+    prog=Math.min(prog+0.055,1);const ease=1-Math.pow(1-prog,3);
+    ctx.clearRect(0,0,W,H);frame();
+    const y0=toYL(0);
+    months.forEach((mo,i)=>{
+      const cx=toX(i),iS=mo.m===selMonth;
+      const rh=y0-toYL(mo.t.rev*ease),rx=cx-bGap/2-bW;
+      const rg=ctx.createLinearGradient(rx,y0-rh,rx,y0);rg.addColorStop(0,`rgba(${rgb('#2563eb').join(',')},${iS?1:0.8})`);rg.addColorStop(1,`rgba(${rgb('#2563eb').join(',')},0.25)`);
+      ctx.fillStyle=rg;ctx.beginPath();ctx.roundRect(rx,y0-rh,bW,rh,[3,3,0,0]);ctx.fill();
+      const eh=y0-toYL(mo.t.exp*ease),ex=cx+bGap/2;
+      const eg=ctx.createLinearGradient(ex,y0-eh,ex,y0);eg.addColorStop(0,`rgba(${rgb('#dc2626').join(',')},${iS?0.9:0.7})`);eg.addColorStop(1,`rgba(${rgb('#dc2626').join(',')},0.2)`);
+      ctx.fillStyle=eg;ctx.beginPath();ctx.roundRect(ex,y0-eh,bW,eh,[3,3,0,0]);ctx.fill();
+      if(iS){ctx.strokeStyle='#2563eb';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(rx-1,y0-rh-1,bW+2,rh+2,[4,4,0,0]);ctx.stroke();ctx.strokeStyle='#dc2626';ctx.beginPath();ctx.roundRect(ex-1,y0-eh-1,bW+2,eh+2,[4,4,0,0]);ctx.stroke();}
+    });
+    const pg=ctx.createLinearGradient(0,P.t,0,P.t+cH);pg.addColorStop(0,'rgba(22,163,74,0.14)');pg.addColorStop(1,'rgba(22,163,74,0.01)');
+    ctx.beginPath();let st=false;
+    months.forEach((mo,i)=>{const x=toX(i),y=toYR(rMn+(mo.t.net-rMn)*ease);if(!st){ctx.moveTo(x,y);st=true;}else ctx.lineTo(x,y);});
+    ctx.lineTo(toX(months.length-1),toYR(rMn));ctx.lineTo(toX(0),toYR(rMn));ctx.closePath();ctx.fillStyle=pg;ctx.fill();
+    ctx.beginPath();ctx.strokeStyle='#16a34a';ctx.lineWidth=2.5;ctx.lineJoin='round';st=false;
+    months.forEach((mo,i)=>{const x=toX(i),y=toYR(rMn+(mo.t.net-rMn)*ease);if(!st){ctx.moveTo(x,y);st=true;}else ctx.lineTo(x,y);});ctx.stroke();
+    months.forEach((mo,i)=>{
+      const x=toX(i),y=toYR(rMn+(mo.t.net-rMn)*ease),iS=mo.m===selMonth;
+      ctx.beginPath();ctx.arc(x,y,iS?5.5:3.5,0,Math.PI*2);ctx.fillStyle=mo.t.net<0?'#dc2626':'#16a34a';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
+      if(prog>0.9){ctx.fillStyle=mo.t.net<0?'#dc2626':'#16a34a';ctx.font=`600 9px 'JetBrains Mono',monospace`;ctx.textAlign='center';ctx.fillText(fmtK(mo.t.net),x,y-10);}
+    });
+    if(prog<1)requestAnimationFrame(draw);
   }
-
-  const COLORS = {
-    rev:  '#d4622a',
-    exp:  '#c0392b',
-    net:  '#2e7d32',
-    grid: 'rgba(180,150,110,0.18)',
-    axis: '#7a5c3e',
-    zero: 'rgba(192,57,43,0.3)',
-  };
-
-  // ── draw static frame (axes + labels) ──
-  function drawFrame() {
-    // left axis labels
-    const steps = 5;
-    ctx.font = `500 10px 'IBM Plex Mono', monospace`;
-    ctx.textAlign = 'right';
-    for (let s = 0; s <= steps; s++) {
-      const v = leftMin + (leftRange / steps) * s;
-      const y = toYL(v);
-      ctx.strokeStyle = COLORS.grid;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
-      ctx.fillStyle = COLORS.rev;
-      const lbl = v >= 1000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0);
-      ctx.fillText(lbl, PAD.left - 6, y + 3.5);
-    }
-    // right axis labels (profit)
-    ctx.textAlign = 'left';
-    const rSteps = 4;
-    for (let s = 0; s <= rSteps; s++) {
-      const v = rightMin + (rightRange / rSteps) * s;
-      const y = toYR(v);
-      ctx.fillStyle = COLORS.net;
-      const lbl = v >= 1000 ? (v/1000).toFixed(0)+'K' : v < 0 ? '-'+(Math.abs(v)/1000).toFixed(0)+'K' : v.toFixed(0);
-      ctx.fillText(lbl, PAD.left + cW + 5, y + 3.5);
-    }
-    // axis labels titles
-    ctx.save();
-    ctx.font = `600 9px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = COLORS.rev;
-    ctx.textAlign = 'center';
-    ctx.translate(14, PAD.top + cH/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText('รายได้ / รายจ่าย (฿)', 0, 0);
-    ctx.restore();
-    ctx.save();
-    ctx.font = `600 9px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = COLORS.net;
-    ctx.textAlign = 'center';
-    ctx.translate(W - 10, PAD.top + cH/2);
-    ctx.rotate(Math.PI/2);
-    ctx.fillText('กำไรสุทธิ (฿)', 0, 0);
-    ctx.restore();
-    // zero line for profit axis
-    if (rightMin < 0) {
-      const z = toYR(0);
-      ctx.strokeStyle = COLORS.zero;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5,4]);
-      ctx.beginPath(); ctx.moveTo(PAD.left, z); ctx.lineTo(PAD.left+cW, z); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    // x-axis labels
-    ctx.fillStyle = COLORS.axis;
-    ctx.font = `500 11px 'Noto Sans Thai', sans-serif`;
-    ctx.textAlign = 'center';
-    months.forEach((mo, i) => {
-      const isSelected = mo.m === selMonth;
-      ctx.fillStyle = isSelected ? COLORS.rev : COLORS.axis;
-      ctx.font = isSelected ? `700 11px 'Noto Sans Thai', sans-serif` : `500 11px 'Noto Sans Thai', sans-serif`;
-      ctx.fillText(mo.label, toX(i), H - PAD.bottom + 18);
-    });
-    // column highlight for selected month
-    const si = months.findIndex(mo => mo.m === selMonth);
-    if (si >= 0) {
-      const cx = toX(si);
-      ctx.fillStyle = 'rgba(212,98,42,0.05)';
-      ctx.fillRect(cx - cW/n/2, PAD.top, cW/n, cH);
-    }
-  }
-
-  // ── animated draw ──
-  let prog = 0;
-  let animId = null;
-
-  function draw() {
-    prog = Math.min(prog + 0.055, 1);
-    const ease = 1 - Math.pow(1 - prog, 3);
-
-    ctx.clearRect(0, 0, W, H);
-    drawFrame();
-
-    months.forEach((mo, i) => {
-      const cx = toX(i);
-      const y0 = toYL(0);
-
-      // ── Revenue bar (left of center) ──
-      const rh = (toYL(0) - toYL(mo.totalRev * ease));
-      const rx = cx - barGap/2 - singleW;
-      const revGrad = ctx.createLinearGradient(rx, y0 - rh, rx, y0);
-      revGrad.addColorStop(0, `rgba(${rgb(COLORS.rev).join(',')},0.92)`);
-      revGrad.addColorStop(1, `rgba(${rgb(COLORS.rev).join(',')},0.35)`);
-      ctx.fillStyle = revGrad;
-      ctx.beginPath();
-      ctx.roundRect(rx, y0 - rh, singleW, rh, [3,3,0,0]);
-      ctx.fill();
-
-      // ── Expense bar (right of center) ──
-      const eh = (toYL(0) - toYL(mo.totalExp * ease));
-      const ex = cx + barGap/2;
-      const expGrad = ctx.createLinearGradient(ex, y0 - eh, ex, y0);
-      expGrad.addColorStop(0, `rgba(${rgb(COLORS.exp).join(',')},0.85)`);
-      expGrad.addColorStop(1, `rgba(${rgb(COLORS.exp).join(',')},0.3)`);
-      ctx.fillStyle = expGrad;
-      ctx.beginPath();
-      ctx.roundRect(ex, y0 - eh, singleW, eh, [3,3,0,0]);
-      ctx.fill();
-
-      // ── Selected month bar outlines ──
-      if (mo.m === selMonth) {
-        ctx.strokeStyle = COLORS.rev;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath(); ctx.roundRect(rx-1, y0-rh-1, singleW+2, rh+2, [4,4,0,0]); ctx.stroke();
-        ctx.strokeStyle = COLORS.exp;
-        ctx.beginPath(); ctx.roundRect(ex-1, y0-eh-1, singleW+2, eh+2, [4,4,0,0]); ctx.stroke();
-      }
-    });
-
-    // ── Profit line ──
-    // Area fill
-    const netGradFill = ctx.createLinearGradient(0, PAD.top, 0, PAD.top+cH);
-    netGradFill.addColorStop(0, `rgba(${rgb(COLORS.net).join(',')},0.18)`);
-    netGradFill.addColorStop(1, `rgba(${rgb(COLORS.net).join(',')},0.01)`);
-    ctx.beginPath();
-    let started = false;
-    months.forEach((mo, i) => {
-      const x = toX(i);
-      const v = rightMin + (mo.net - rightMin) * ease;
-      const y = toYR(v);
-      if (!started) { ctx.moveTo(x, y); started = true; }
-      else ctx.lineTo(x, y);
-    });
-    if (started) {
-      ctx.lineTo(toX(months.length-1), toYR(rightMin));
-      ctx.lineTo(toX(0), toYR(rightMin));
-      ctx.closePath();
-      ctx.fillStyle = netGradFill;
-      ctx.fill();
-    }
-    // Line stroke
-    ctx.beginPath();
-    ctx.strokeStyle = COLORS.net;
-    ctx.lineWidth = 2.8;
-    ctx.lineJoin = 'round';
-    ctx.setLineDash([]);
-    started = false;
-    months.forEach((mo, i) => {
-      const x = toX(i);
-      const v = rightMin + (mo.net - rightMin) * ease;
-      const y = toYR(v);
-      if (!started) { ctx.moveTo(x, y); started = true; }
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-    // Dots + value labels
-    months.forEach((mo, i) => {
-      const x = toX(i);
-      const v = rightMin + (mo.net - rightMin) * ease;
-      const y = toYR(v);
-      const isSel = mo.m === selMonth;
-      ctx.beginPath();
-      ctx.arc(x, y, isSel ? 6 : 4, 0, Math.PI*2);
-      ctx.fillStyle = mo.net < 0 ? COLORS.exp : COLORS.net;
-      ctx.fill();
-      ctx.strokeStyle = '#fff8f0';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // value label (appears after animation settles)
-      if (prog > 0.88) {
-        const realV = mo.net;
-        const lbl = Math.abs(realV) >= 1000 ? (realV/1000).toFixed(1)+'K' : realV.toFixed(0);
-        ctx.fillStyle = realV < 0 ? COLORS.exp : COLORS.net;
-        ctx.font = `600 9px 'IBM Plex Mono', monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, x, y - 10);
-      }
-    });
-
-    if (prog < 1) animId = requestAnimationFrame(draw);
-  }
-  if (animId) cancelAnimationFrame(animId);
   requestAnimationFrame(draw);
-
-  // ── Tooltip ──
-  const tt = document.getElementById('tt-combined');
-  canvas.onmousemove = function(e) {
-    const r = canvas.getBoundingClientRect();
-    const mx = (e.clientX - r.left);
-    let found = null;
-    months.forEach((mo, i) => { if (Math.abs(mx - toX(i)) < cW/n*0.5) found = { mo, i }; });
-    if (found) {
-      const { mo } = found;
-      const netColor = mo.net >= 0 ? '#2e7d32' : '#c0392b';
-      tt.innerHTML =
-        `<div style="font-weight:700;margin-bottom:5px;font-size:0.8rem;">${MONTHS_TH[mo.m-1]} ${selYear}</div>` +
-        `<div style="color:#d4622a;">📈 รายได้&nbsp;&nbsp; ฿${fmt(mo.totalRev)}</div>` +
-        `<div style="color:#c0392b;">📉 รายจ่าย ฿${fmt(mo.totalExp)}</div>` +
-        `<div style="color:${netColor};margin-top:4px;border-top:1px solid rgba(0,0,0,0.1);padding-top:4px;">💰 กำไร&nbsp;&nbsp;&nbsp;&nbsp; ฿${fmt(mo.net)}</div>`;
-      tt.style.opacity = '1';
-      let tx = mx + 14, ty = (e.clientY - r.top) - 10;
-      if (tx + 200 > W) tx = mx - 215;
-      if (ty < 5) ty = 5;
-      tt.style.left = tx + 'px';
-      tt.style.top  = ty + 'px';
-    } else {
-      tt.style.opacity = '0';
-    }
+  const tt=document.getElementById('tt-c');
+  cv.onmousemove=function(e){const r=cv.getBoundingClientRect(),mx=e.clientX-r.left;let f=null;months.forEach((mo,i)=>{if(Math.abs(mx-toX(i))<cW/n*0.5)f={mo,i};});
+    if(f){const{mo}=f,nc=mo.t.net>=0?'#16a34a':'#dc2626';
+      tt.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${MTH[mo.m-1]} ${selYear}</div><div style="color:#93c5fd">📈 รายได้&nbsp;&nbsp;&nbsp; ฿${fmt(mo.t.rev)}</div><div style="color:#fca5a5">📉 รายจ่าย&nbsp; ฿${fmt(mo.t.exp)}</div><div style="color:${nc};margin-top:5px;border-top:1px solid rgba(255,255,255,0.15);padding-top:5px">💰 กำไร&nbsp;&nbsp;&nbsp;&nbsp; ฿${fmt(mo.t.net)}</div>`;
+      tt.style.opacity='1';let tx=mx+14,ty=e.clientY-r.top-10;if(tx+185>W)tx=mx-200;tt.style.left=tx+'px';tt.style.top=ty+'px';
+    }else tt.style.opacity='0';
   };
-  canvas.onmouseleave = () => { tt.style.opacity = '0'; };
+  cv.onmouseleave=()=>{tt.style.opacity='0';};
 }
 
-function renderCompare() {
-  // Show last 4 months with data
-  const entries = [];
-  for (let y of YEARS) {
-    for (let m=1;m<=12;m++) {
-      const d = db[key(y,m)];
-      if (d) {
-        const totalRev = (d.revenue_sales||0)+(d.revenue_gas||0)+(d.revenue_transfer||0)+(d.revenue_longan||0);
-        const totalExp = (d.exp_stock||0)+(d.exp_stock_yay||0)+(d.exp_gas||0)+(d.exp_longan_labor||0)+(d.exp_deco||0);
-        const net = d.profit_net !== undefined ? d.profit_net : totalRev - totalExp - 5000;
-        entries.push({ y, m, totalRev, totalExp, net, label: `${MONTHS_TH[m-1]} ${y}` });
-      }
-    }
-  }
-  if (entries.length === 0) return '';
-  const maxRev = Math.max(...entries.map(e=>e.totalRev));
-  const maxNet = Math.max(...entries.map(e=>e.net));
-  const minNet = Math.min(...entries.map(e=>e.net));
-  return `
-    <div class="compare-section">
-      <div class="section-title">เปรียบเทียบทุกเดือน (${entries.length} เดือน)</div>
-      <div class="panel" style="overflow-x:auto;">
-        <table class="compare-table">
-          <thead>
-            <tr>
-              <th>เดือน</th>
-              <th>รายได้รวม (฿)</th>
-              <th>รายจ่ายรวม (฿)</th>
-              <th>กำไรสุทธิ (฿)</th>
-              <th>อัตรากำไร</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${entries.map(e => {
-              const isBestRev = e.totalRev === maxRev;
-              const isBestNet = e.net === maxNet;
-              const isWorstNet = e.net === minNet && entries.length > 1;
-              return `
-                <tr>
-                  <td>${e.label}</td>
-                  <td class="${isBestRev?'best-val':''}">${fmt(e.totalRev)}</td>
-                  <td>${fmt(e.totalExp)}</td>
-                  <td class="${isBestNet?'best-val':isWorstNet?'worst-val':''}">${fmt(e.net)}</td>
-                  <td style="color:${e.net/e.totalRev>0.15?'var(--profit)':e.net/e.totalRev>0.08?'#b56a00':'var(--loss)'}">${pct(e.net,e.totalRev)}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-
-// ─── ACTIONS ──────────────────────────────────────────────────
-function saveData() {
-  const get = id => { const el=document.getElementById(id); return el?parseFloat(el.value)||0:0; };
-  const d = {
-    revenue_sales:    get('f_rev_sales'),
-    revenue_gas:      get('f_rev_gas'),
-    revenue_transfer: get('f_rev_transfer'),
-    revenue_longan:   get('f_rev_longan'),
-    exp_stock:        get('f_exp_stock'),
-    exp_stock_yay:    get('f_exp_stock_yay'),
-    exp_gas:          get('f_exp_gas'),
-    exp_longan_labor: get('f_exp_longan'),
-    exp_deco:         get('f_exp_deco'),
-    savings_transfer: 1500,
-    savings_topup:    6000,
-    savings_longan:   1000,
-    savings_stock:    5000,
-  };
-  const netInput = document.getElementById('f_profit_net');
-  if (netInput && netInput.value) {
-    d.profit_net = parseFloat(netInput.value)||0;
-  } else {
-    const totalRev = d.revenue_sales+d.revenue_gas+d.revenue_transfer+d.revenue_longan;
-    const totalExp = d.exp_stock+d.exp_stock_yay+d.exp_gas+d.exp_longan_labor+d.exp_deco;
-    d.profit_net = totalRev - totalExp - 5000;
-  }
-  db[key(selYear,selMonth)] = d;
-  save();
-  showToast('บันทึกข้อมูลแล้ว ✓');
-  renderSelectors();
-  renderContent();
-}
-
-function clearData() {
-  if(!confirm(`ต้องการลบข้อมูล${MONTHS_TH[selMonth-1]} ${selYear} ใช่ไหม?`)) return;
-  delete db[key(selYear,selMonth)];
-  save();
-  renderSelectors();
-  renderContent();
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
-}
-
-// ─── INIT ─────────────────────────────────────────────────────
-document.getElementById('current-date-display').textContent =
-  new Date().toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'});
-
-renderSelectors();
-renderContent();
+function saveForm(){const g=id=>{const el=document.getElementById(id);return el?parseFloat(el.value)||0:0;};const d={revenue_sales:g('f1'),revenue_gas:g('f2'),revenue_transfer:g('f3'),revenue_longan:g('f4'),exp_stock:g('f5'),exp_stock_yay:g('f6'),exp_gas:g('f7'),exp_longan_labor:g('f8'),exp_deco:g('f9')};const pe=document.getElementById('f10');if(pe&&pe.value)d.profit_net=parseFloat(pe.value)||0;else{const r=d.revenue_sales+d.revenue_gas+d.revenue_transfer+d.revenue_longan,x=d.exp_stock+d.exp_stock_yay+d.exp_gas+d.exp_longan_labor+d.exp_deco;d.profit_net=r-x-5000;}db[key(selYear,selMonth)]=d;sdb();toast('บันทึกข้อมูลแล้ว ✓');render();}
+function clearForm(){if(!confirm(`ลบข้อมูล${MTH[selMonth-1]} ${selYear}?`))return;delete db[key(selYear,selMonth)];sdb();render();}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+render();
 </script>
 </body>
 </html>
